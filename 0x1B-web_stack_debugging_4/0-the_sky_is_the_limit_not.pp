@@ -1,6 +1,14 @@
-# This manifest fixes Nginx configuration to handle high traffic properly
+# This manifest configures Nginx to handle high traffic loads
 
-exec { 'fix--for-nginx':
-  command => 'sed -i "/^worker_processes/c\worker_processes auto;" /etc/nginx/nginx.conf && service nginx restart',
-  path    => '/usr/bin:/usr/sbin:/bin:/sbin',
+exec { 'tune_nginx_worker_processes':
+  command => 'sed -i "s/^worker_processes .*/worker_processes auto;/" /etc/nginx/nginx.conf',
+  path    => ['/usr/bin', '/usr/sbin', '/bin', '/sbin'],
+  onlyif  => 'grep -q "^worker_processes [0-9];" /etc/nginx/nginx.conf',
 }
+
+exec { 'restart_nginx':
+  command => 'service nginx restart',
+  path    => ['/usr/bin', '/usr/sbin', '/bin', '/sbin'],
+  require => Exec['tune_nginx_worker_processes'],
+}
+
