@@ -1,12 +1,9 @@
-# This manifest configures Nginx to handle high traffic by setting worker_processes to auto
+# Fix Nginx config to handle high traffic with no failed requests
 
-exec { 'fix_nginx_config':
-  command => 'sed -i "s/worker_processes [0-9]*/worker_processes auto/" /etc/nginx/nginx.conf',
+exec { 'tune-nginx':
+  command => 'sed -i "s/^worker_processes .*/worker_processes auto;/" /etc/nginx/nginx.conf &&
+    sed -i "/events {/a \    worker_connections 1024;" /etc/nginx/nginx.conf &&
+    service nginx restart',
   path    => '/usr/bin:/usr/sbin:/bin:/sbin',
-}
-
-exec { 'restart_nginx':
-  command => 'service nginx restart',
-  path    => '/usr/bin:/usr/sbin:/bin:/sbin',
-  require => Exec['fix_nginx_config'],
+  unless  => 'grep "worker_connections 1024;" /etc/nginx/nginx.conf',
 }
